@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Controllers/ProductController.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: Controllers/ProductController.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>class ProductController {
+  /**
+   * Obtiene productos desde la Fake Store API usando paginación.
+   *
+   * Realiza dos peticiones:
+   * 1. Una para obtener el total de productos disponibles.
+   * 2. Otra para obtener los productos paginados según `offset` y `limit`.
+   *
+   * @async
+   * @function getProductsByPagination
+   *
+   * @param {number} offset - Número de elementos a omitir (inicio de la paginación).
+   * @param {number} limit - Cantidad de productos a obtener por página.
+   *
+   * @returns {Promise&lt;{
+   *  totalItems: number,
+   *  products: Array&lt;Object>
+   * }>} Retorna un objeto con el total de productos y la lista paginada.
+   *
+   
+   */
+  static async getProductsByPagination(offset, limit) {
+    try {
+      const response = await fetch(" https://api.escuelajs.co/api/v1/products");
+      const listProducts = await response.json();
+      const sizeListproducts = listProducts.length;
+      console.log("Total items:", sizeListproducts);
+
+      const secondResponse = await fetch(
+        `https://api.escuelajs.co/api/v1/products?offset=${offset}&amp;limit=${limit}`,
+      );
+      const secondListProducts = await secondResponse.json();
+      return {
+        totalItems: sizeListproducts,
+        products: secondListProducts,
+      };
+    } catch (error) {}
+  }
+
+  /**
+   * Obtiene un producto a partir de su título (slug) desde la API de EscuelaJS.
+   *
+   * Realiza una petición HTTP al endpoint de productos por slug y maneja
+   * la respuesta según el código de estado HTTP.
+   *
+   * @async
+   * @function getProductByTitle
+   *
+   * @param {string} title - Slug o título del producto a consultar.
+   *
+   * @returns {Promise&lt;{
+   *   product?: Object,
+   *   message?: string,
+   *   status: number
+   * }>} Retorna el producto si existe o un mensaje de error si no se encuentra.
+   */
+  static async getProductByTitle(title) {
+    try {
+      const response = await fetch(
+        `https://api.escuelajs.co/api/v1/products/slug/${title}`,
+      );
+      console.log("response", response.status);
+      switch (response.status) {
+        case 200:
+          const product = await response.json();
+          return { product: product, status: 200 };
+        case 400:
+          return {
+            message: "Producto no encontrado",
+            status: 400,
+          };
+      }
+    } catch (error) {
+      console.error("Error fetching product by title:", error);
+    }
+  }
+
+  /**
+   * Crea un nuevo producto en la API de EscuelaJS.
+   *
+   * Realiza una petición HTTP `POST` enviando los datos del producto en formato JSON
+   * y maneja la respuesta según el código de estado HTTP retornado por el servidor.
+   *
+   * @async
+   * @function createProduct
+   *
+   * @param {Object} product - Objeto que contiene la información del producto a crear.
+   *
+   * @returns {Promise&lt;{
+   *   product?: Object,
+   *   error?: Object | string,
+   *   status: number
+   * }>} Retorna el producto creado o el detalle del error según la respuesta del backend.
+   */
+  static async createProduct(product) {
+    try {
+      const response = await fetch(
+        "https://api.escuelajs.co/api/v1/products/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(product),
+        },
+      );
+
+      const data = await response.json(); // 👈 SIEMPRE leer el body
+
+      switch (response.status) {
+        case 201:
+          return {
+            product: data,
+            status: 201,
+          };
+
+        case 400:
+          return {
+            error: data, // 👈 respuesta real del backend
+            status: 400,
+          };
+
+        case 401:
+          return {
+            error: data,
+            status: 401,
+          };
+
+        default:
+          return {
+            error: data,
+            status: response.status,
+          };
+      }
+    } catch (error) {
+      console.error("Error creating product:", error);
+      return {
+        error: error.message,
+        status: 500,
+      };
+    }
+  }
+
+  /**
+   * Actualiza un producto existente en la API de EscuelaJS.
+   *
+   * Realiza una petición HTTP `PUT` enviando los datos actualizados del producto
+   * en formato JSON y maneja la respuesta según el código de estado HTTP.
+   *
+   * @async
+   * @function updateProduct
+   *
+   * @param {number | string} id - Identificador único del producto a actualizar.
+   * @param {Object} product - Objeto con los datos del producto a actualizar.
+   *
+   * @returns {Promise&lt;{
+   *   product?: Object,
+   *   error?: Object | string,
+   *   status: number
+   * }>} Retorna el producto actualizado o el detalle del error según la respuesta del backend.
+   */
+  static async updateProduct(id, product) {
+    console.log("product to update", product);
+    try {
+      const response = await fetch(
+        `https://api.escuelajs.co/api/v1/products/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(product),
+        },
+      );
+
+      const data = await response.json(); // 👈 siempre leer el body
+      console.log("response", response);
+
+      switch (response.status) {
+        case 200:
+          return {
+            product: data,
+            status: 200,
+          };
+        case 204:
+          return {
+            product: data,
+            status: 204,
+          };
+
+        case 400:
+          return {
+            error: data, // errores de validación del backend
+            status: 400,
+          };
+
+        case 404:
+          return {
+            error: data,
+            status: 404,
+          };
+
+        case 401:
+          return {
+            error: data,
+            status: 401,
+          };
+
+        default:
+          return {
+            error: data,
+            status: response.status,
+          };
+      }
+    } catch (error) {
+      console.error("Error updating product:", error);
+      return {
+        error: error.message,
+        status: 500,
+      };
+    }
+  }
+}
+
+export default ProductController;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-libraries_productCard.html">libraries/productCard</a></li><li><a href="module-libraries_productModal.html">libraries/productModal</a></li><li><a href="module-libraries_products.html">libraries/products</a></li><li><a href="module-libraries_router.html">libraries/router</a></li></ul><h3>Classes</h3><ul><li><a href="Product.html">Product</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createProduct">createProduct</a></li><li><a href="global.html#createSlug">createSlug</a></li><li><a href="global.html#formatUSD">formatUSD</a></li><li><a href="global.html#getProductByTitle">getProductByTitle</a></li><li><a href="global.html#getProductsByPagination">getProductsByPagination</a></li><li><a href="global.html#isAllFieldsEmpty">isAllFieldsEmpty</a></li><li><a href="global.html#searchProducstByDateRange">searchProducstByDateRange</a></li><li><a href="global.html#updateProduct">updateProduct</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Sat Jan 17 2026 09:31:52 GMT-0500 (hora estándar de Colombia)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
